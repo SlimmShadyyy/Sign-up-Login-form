@@ -1,0 +1,118 @@
+const express = require("express");
+const app = express();
+app.use(express.json());
+const port = 5000;
+
+
+
+const users = [];
+
+
+function check_name(name){
+    if(name.length>12){
+        return "Your name can't be more than 12 characters";
+    }else if(name.length<3){
+        return "Your name can't be less than 3 characters";
+    }else{
+        return "Success";
+    }
+}
+function last_name(lastname){
+    if(lastname.length>15){
+        return "Your last name can't be more than 15 characters"
+    }else if(lastname.length<3){
+        return "Your last name can't be less than 3 characters";
+    }
+    else{
+        return "Success";
+    }
+}
+function check_email(email){
+    if (!email.includes("@") || !email.endsWith(".com")) {
+        return "Invalid email format. Email should contain '@' and end with '.com'";
+    } else {
+        return "Success";
+    }
+}
+function check_phone(phone_no) {
+    if (phone_no.length !== 10 || phone_no.match(/^[0-9]+$/)=== null) {
+        return "Phone number must be exactly 10 digits";
+    }else{
+        return "Success";
+    }
+}
+function check_password(name,lastname,password){
+    var regularExpression = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/;
+    console.log(password.match(regularExpression));
+    if(password.includes(name) || password.includes(lastname) || password.length<8){
+        return "Invalid password format. Password shouldn't contain name,lastname and length shouldn't be less than 8."
+    }else if(password.match(regularExpression)===null){
+        return "Invalid password format";
+    }else{
+        return "Success";
+    }
+}
+
+function userExists(email) {
+    return users.some(user => user.email === email);
+}
+
+
+app.post("/signup",(req,res)=>{
+    const {name,lastname,email,password,phone_no}=req.body;
+    var ismynamecorrect=check_name(name);
+    var ismylastnamecorrect=last_name(lastname);
+    const ismyemailcorrect = check_email(email);
+    const ismyphonenocorrect=check_phone(phone_no);
+    const ismypasswordcorrect=check_password(name,lastname,password);
+    if (ismynamecorrect!="Success"){
+        return res.status(401).send(ismynamecorrect);
+    };
+    if (ismylastnamecorrect!="Success"){
+        return res.status(401).send(ismylastnamecorrect);
+    };
+    if(ismyemailcorrect!="Success"){
+        return res.status(401).send(ismyemailcorrect);
+    }
+    if(ismyphonenocorrect!="Success"){
+        return res.status(401).send(ismyphonenocorrect);
+    }
+    if(ismypasswordcorrect!="Success"){
+        return res.status(401).send(ismypasswordcorrect);
+    }
+    if (userExists(email)) {
+        return res.status(409).send("User with this email already exists.");
+    }
+    const newUser = {
+        name: name,
+        lastname: lastname,
+        email: email,
+        password: password,
+        phone_no: phone_no
+    };
+
+    users.push(newUser);  
+    return res.status(200).send({"Name": name, "Lastname": lastname, "Email": email, "Password": password, "Phone_no": phone_no});
+})
+
+function login(req,res){
+    const {email,password}=req.body;
+    for(var i=0;i<users.length;i++){
+        const user=users[i];
+        console.log(user.email,user.password);
+        if(user.email===email && user.password===password){
+            return res.status(200).send("Logged in!");
+        }
+    } 
+    return res.status(401).send("Invalid email or password");
+}
+
+app.post("/login",login);
+
+
+
+app.get("/getusers",(req,res)=>{
+    return res.status(200).send(users);
+})
+
+app.listen(port, () => console.log(`Server is starting at ${port}`));
